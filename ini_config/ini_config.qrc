@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/ini_config"/>
+    <qresource prefix="/icon">
+        <file>folder.svg</file>
+        <file>save_settings.svg</file>
+    </qresource>
+</RCC>

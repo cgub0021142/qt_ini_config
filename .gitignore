@@ -1,0 +1,5 @@
+/ini_config.opensdf
+/ini_config.sdf
+/ini_config/*.filters
+/ini_config/*.user
+/ini_config/*.vcxproj/
