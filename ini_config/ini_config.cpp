@@ -126,14 +126,14 @@ void ini_config::on_o_JLinkArmDllPath_clicked(){
 
 void ini_config::on_o_DTM_FW_clicked(){
 	QDir path( ".\\");
-	QString relative_path = path.relativeFilePath(QFileDialog::getOpenFileName(this, "", ".\\", " hex (*.hex);; bin (*.bin)"));
+	QString relative_path = path.relativeFilePath(QFileDialog::getOpenFileName(this, "", ".\\", "firmware file (*.hex *.bin)"));
 	if (!relative_path.isEmpty())
 		ui.e_DTM_FW->setText(relative_path);
 }
 
 void ini_config::on_o_Product_FW_clicked(){
 	QDir path( ".\\");
-	QString relative_path = path.relativeFilePath(QFileDialog::getOpenFileName(this, "", ".\\", " hex (*.hex);; bin (*.bin)"));
+	QString relative_path = path.relativeFilePath(QFileDialog::getOpenFileName(this, "", ".\\",  "firmware file (*.hex *.bin)"));
 	if (!relative_path.isEmpty())
 		ui.e_DTM_FW->setText(relative_path);
 }
