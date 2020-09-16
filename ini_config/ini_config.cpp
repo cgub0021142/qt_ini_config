@@ -1,17 +1,18 @@
-#include "ini_config.h"
+﻿#include "ini_config.h"
 #include <qdebug.h>
 #include <qmessagebox.h>
 #include <qtimer.h>
-
+#include <QCloseEvent>
 ini_config::ini_config(QWidget *parent, Qt::WFlags flags)
 	: QWidget(parent, flags),
-	file_path(".\\ADMFG_Configure\\ADMFG_Configure.ini")
+	file_path("./ADMFG_Configure/ADMFG_Configure.ini"),
+	file_rfport_path("./BT_Profile.ini")
 {
 	ui.setupUi(this);
 	check_back_slash(file_path.toStdString());
 	ini_file = new QSettings( file_path, QSettings::IniFormat);
-
-
+	//ini_file->setIniCodec( "ISO 8859-1");
+	qDebug()<<ini_file->iniCodec();
 	ini_file->beginGroup("GeneralSetting");
 	ui.e_TesterID->setText(ini_file->value("TesterID", "no data").toString());
 	ini_file->endGroup();
@@ -53,17 +54,66 @@ ini_config::ini_config(QWidget *parent, Qt::WFlags flags)
 	ui.e_PowerCurrent->setText(ini_file->value("PowerCurrent", "no data").toString());
 	ui.e_JLinkArmDllPath->setText(ini_file->value("JLinkArmDllPath", "no data").toString());
 	ui.e_DTM_FW->setText(ini_file->value("DTM_FW", "no data").toString());
-	QVariant path = ini_file->value("DTM_FW", "no data");
 	ui.e_Product_FW->setText(ini_file->value("Product_FW", "no data").toString());
 
 	ini_file->endGroup();
-	
+	delete ini_file;
+
+	//get rf port
+	QFile file_rf_port(file_rfport_path);
+	if( !file_rf_port.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		qFatal("******File can not open.******");
+	}
+	else{
+		QTextStream in(&file_rf_port);
+		//find out the line number where record rf port
+
+		found_line_num = false;
+		for(int idx = 0; !in.atEnd(); idx++){
+			read_in_array<< in.readLine();
+			if(!found_line_num && 
+				!read_in_array[idx].compare("###General") ){
+					while(!in.atEnd()){
+						read_in_array<< in.readLine();
+						++idx;
+						qDebug()<<read_in_array[idx][0];
+						if(read_in_array[idx][0] =='#' || read_in_array[idx].count(",") != 5)
+							continue;
+						setting_line_at = idx;
+						found_line_num = true;
+						break;
+					}
+			}
+		}		
+		if( !found_line_num ){
+			qFatal("Can't find the data which format should be five comma and six number.");
+		}
+		//QFile::remove(backup_file_name);
+		//file.copy(backup_file_name);
+
+		//get the original setting
+		//get the position
+		insert_posi = read_in_array[setting_line_at].lastIndexOf(',') + 1;
+		QString before = read_in_array[setting_line_at].mid(insert_posi);
+		ui.cbo_rfport->setCurrentIndex(before.toInt() - 1);
+		
+
+	}
+	file_rf_port.close();
+
 }
 
 ini_config::~ini_config()
 {
-	
 }
+
+void ini_config::closeEvent(QCloseEvent *event)
+ {
+
+
+        event->accept();
+
+ }
 
 void ini_config::on_o_JLinkArmDllPath_clicked(){
 	ui.e_JLinkArmDllPath->setText(
@@ -131,7 +181,7 @@ void ini_config::on_btn_save_settings_clicked(){
 
 	delete ini_file;
 
-	//change %23 to #
+	//change %23 to # cause by ini destructor
 	QString read_in_data;
     QFile file(file_path);
     if( !file.open(QIODevice::ReadWrite | QIODevice::Text)) {
@@ -139,10 +189,10 @@ void ini_config::on_btn_save_settings_clicked(){
     }
     else{
         QTextStream in(&file);
-        //read_in_data = in.readAll();
-		while(!in.atEnd()){
-			read_in_data += in.readLine() + "\n";
-		}
+        read_in_data = in.readAll();
+		//while(!in.atEnd()){
+		//	read_in_data += in.readLine() + "\n";
+		//}
 		read_in_data.replace("%23","#");
 		int last_new_line_posi = read_in_data.lastIndexOf('\n');
 		read_in_data.remove(last_new_line_posi, 1);
@@ -154,6 +204,24 @@ void ini_config::on_btn_save_settings_clicked(){
 	QTextStream out(&rewrite);
 	out<<read_in_data;
 	rewrite.close();
+
+	//save rf port
+	QString port = ui.cbo_rfport->currentText();
+	read_in_array[setting_line_at] = read_in_array[setting_line_at].mid(0,insert_posi) + port;
+	QFile file_rf_port(file_rfport_path);
+	if( !file_rf_port.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+		qFatal("******File can not open.******");
+	}
+	else{
+		QTextStream out(&file_rf_port);
+		QList<QString>::const_iterator i;
+		for(i = read_in_array.constBegin(); i < read_in_array.constEnd() -1; ++i){
+			out<< *i + "\n";
+		}
+		out<< *i;//last line can't have new line.
+	}
+	file.close();
+
 
 	//log
 	QMessageBox msg_box;
@@ -167,24 +235,40 @@ void ini_config::on_btn_save_settings_clicked(){
 }
 
 void ini_config::check_back_slash(std::string path){
-	using namespace std;
-	ifstream in( path, ios::in);
-	string tmp;
-    string text ;
-
-    while(!in.eof()){
-		getline(in,tmp);
-		for (int i = 0 ; i < tmp.size();i++) 
-		{
-			if(tmp[i] == '\\')
-			{
-				tmp[i] = '/' ;
-			}
-		}
-		text.append(tmp);
-		text.append("\n");
-	}
-
-	ofstream out( path, ios::out);
-	out<< text;
+	//using namespace std;
+	//ifstream in( path, ios::in);
+	//string tmp;
+ //   string text ;
+	//getline(in,tmp);
+	////remove all before[  due to utf-8 codec cause error "ef bb bf"
+	////int start_at = tmp.find("[");
+	////text.append(tmp.substr(start_at));
+ //   while(!in.eof()){
+	//	getline(in,tmp);
+	//	for (int i = 0 ; i < tmp.size();i++) 
+	//	{
+	//		if(tmp[i] == '\\')
+	//		{
+	//			tmp[i] = '/' ;
+	//		}
+	//	}
+	//	text.append(tmp);
+	//	text.append("\n");
+	//}
+	//text.erase(text.length()-1);
+	//
+	//ofstream out( path, ios::out);
+	//out<< text;
+	//remove the bom of utf8 and transform the \ to /
+	QFile file(file_path);
+	file.open(QIODevice::ReadWrite | QIODevice::Text);
+	QTextStream in(&file);
+    QString read_in_data = in.readAll();
+	read_in_data.replace(QString("\\"), QString("/"));
+	file.close();
+	QFile file_out(file_path);
+	file_out.open(QIODevice::WriteOnly | QIODevice::Text);
+	QTextStream out(&file_out);
+	out<< read_in_data;
+	file_out.close();
 }

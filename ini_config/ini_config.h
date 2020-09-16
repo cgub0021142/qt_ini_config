@@ -19,12 +19,20 @@ class ini_config : public QWidget
 public:
 	ini_config(QWidget *parent = 0, Qt::WFlags flags = 0);
 	~ini_config();
-
+protected:
+	void closeEvent(QCloseEvent *event);
 private:
 	Ui::ini_configClass ui;
 	QSettings *ini_file;
 	QString file_path;
+	QString file_rfport_path;
 	void check_back_slash(std::string path);
+	//rf port
+	QStringList read_in_array;
+	bool found_line_num;
+	int setting_line_at;
+	int insert_posi;
+
 private slots:
 	void on_o_JLinkArmDllPath_clicked();
 	void on_o_DTM_FW_clicked();
