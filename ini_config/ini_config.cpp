@@ -116,21 +116,26 @@ void ini_config::closeEvent(QCloseEvent *event)
  }
 
 void ini_config::on_o_JLinkArmDllPath_clicked(){
-	ui.e_JLinkArmDllPath->setText(
-		QFileDialog::getOpenFileName(this, "", "C:\\Program Files (x86)", "dll (*.dll)"));
+	//ui.e_JLinkArmDllPath->setText(
+	//	QFileDialog::getOpenFileName(this, "", "C:\\Program Files (x86)", "dll (*.dll)"));
 	//ini_file->setValue("DUT_BT_nRF52840/JLinkArmDllPath", ui.e_DTM_FW->text());
+	QString absolute_path = QFileDialog::getOpenFileName(this, "", "C:\\Program Files (x86)", "dll (*.dll)");
+	if (!absolute_path.isEmpty())
+		ui.e_JLinkArmDllPath->setText(absolute_path);
 }
 
 void ini_config::on_o_DTM_FW_clicked(){
 	QDir path( ".\\");
-	QString relative_path = path.relativeFilePath(QFileDialog::getOpenFileName(this, "", ".\\", "hex (*.hex)"));
-	ui.e_DTM_FW->setText(relative_path);
+	QString relative_path = path.relativeFilePath(QFileDialog::getOpenFileName(this, "", ".\\", " hex (*.hex);; bin (*.bin)"));
+	if (!relative_path.isEmpty())
+		ui.e_DTM_FW->setText(relative_path);
 }
 
 void ini_config::on_o_Product_FW_clicked(){
 	QDir path( ".\\");
-	QString relative_path = path.relativeFilePath(QFileDialog::getOpenFileName(this, "", ".\\", "hex (*.hex)"));
-	ui.e_Product_FW->setText(relative_path);
+	QString relative_path = path.relativeFilePath(QFileDialog::getOpenFileName(this, "", ".\\", " hex (*.hex);; bin (*.bin)"));
+	if (!relative_path.isEmpty())
+		ui.e_DTM_FW->setText(relative_path);
 }
 
 void ini_config::on_btn_save_settings_clicked(){
