@@ -6,7 +6,8 @@
 ini_config::ini_config(QWidget *parent, Qt::WFlags flags)
 	: QWidget(parent, flags),
 	file_path("./ADMFG_Configure/ADMFG_Configure.ini"),
-	file_rfport_path("./BT_Profile.ini")
+	file_rfport_path("./BT_Profile.ini"),
+	JLinkArmDllPath("C:\\Program Files (x86)")
 {
 	ui.setupUi(this);
 	check_back_slash(file_path.toStdString());
@@ -52,6 +53,7 @@ ini_config::ini_config(QWidget *parent, Qt::WFlags flags)
 	ui.e_PowerCurrentMax->setText(ini_file->value("PowerCurrentMax", "no data").toString());
 	ui.e_PowerVoltage->setText(ini_file->value("PowerVoltage", "no data").toString());
 	ui.e_PowerCurrent->setText(ini_file->value("PowerCurrent", "no data").toString());
+	JLinkArmDllPath = ini_file->value("JLinkArmDllPath", "no data").toString();
 	ui.e_JLinkArmDllPath->setText(ini_file->value("JLinkArmDllPath", "no data").toString());
 	ui.e_DTM_FW->setText(ini_file->value("DTM_FW", "no data").toString());
 	ui.e_Product_FW->setText(ini_file->value("Product_FW", "no data").toString());
@@ -74,12 +76,15 @@ ini_config::ini_config(QWidget *parent, Qt::WFlags flags)
 			if(!found_line_num && 
 				!read_in_array[idx].compare("###General") ){
 					while(!in.atEnd()){
-						read_in_array<< in.readLine();
+						QString tmp = in.readLine();
+						read_in_array<< tmp;
 						++idx;
 						qDebug()<<read_in_array[idx][0];
-						if(read_in_array[idx][0] =='#' || read_in_array[idx].count(",") != 5)
+						if(tmp[0] =='#' || tmp.count(",") != 5)
 							continue;
-						setting_line_at = idx;
+						setting_line_at = idx;						
+						info = tmp.split(",");
+						++idx;
 						found_line_num = true;
 						break;
 					}
@@ -119,9 +124,9 @@ void ini_config::on_o_JLinkArmDllPath_clicked(){
 	//ui.e_JLinkArmDllPath->setText(
 	//	QFileDialog::getOpenFileName(this, "", "C:\\Program Files (x86)", "dll (*.dll)"));
 	//ini_file->setValue("DUT_BT_nRF52840/JLinkArmDllPath", ui.e_DTM_FW->text());
-	QString absolute_path = QFileDialog::getOpenFileName(this, "", "C:\\Program Files (x86)", "dll (*.dll)");
-	if (!absolute_path.isEmpty())
-		ui.e_JLinkArmDllPath->setText(absolute_path);
+	JLinkArmDllPath = QFileDialog::getOpenFileName(this, "", JLinkArmDllPath, "dll (*.dll)");
+	if (!JLinkArmDllPath.isEmpty() && JLinkArmDllPath.compare(QString("C:\\Program Files (x86)")))
+		ui.e_JLinkArmDllPath->setText(JLinkArmDllPath);
 }
 
 void ini_config::on_o_DTM_FW_clicked(){
@@ -212,7 +217,23 @@ void ini_config::on_btn_save_settings_clicked(){
 
 	//save rf port
 	QString port = ui.cbo_rfport->currentText();
-	read_in_array[setting_line_at] = read_in_array[setting_line_at].mid(0,insert_posi) + port;
+	info[5] = port;
+	info[1] = port;
+	int DUTCount = ui.cbo_DUT_Count->currentText().toInt();
+	if(port.toInt() != DUTCount)
+	{
+		info[2] = QString::number(port.toInt() + 1);
+	}
+	else
+		info[2] = QString("1");
+	QString rlt("");
+	for(int i = 0; i < 5; ++i)
+	{
+		rlt += info[i] + QString(",");
+	}
+	rlt += info[5];
+ 	read_in_array[setting_line_at] = rlt;
+
 	QFile file_rf_port(file_rfport_path);
 	if( !file_rf_port.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
 		qFatal("******File can not open.******");

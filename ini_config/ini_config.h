@@ -32,6 +32,8 @@ private:
 	bool found_line_num;
 	int setting_line_at;
 	int insert_posi;
+	QString JLinkArmDllPath;
+	QStringList info;
 
 private slots:
 	void on_o_JLinkArmDllPath_clicked();
